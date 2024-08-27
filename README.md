@@ -37,10 +37,9 @@ Follow these steps to install the plugin on your SCP:SL server:
    1. Restart your SCP server to load the new plugin. Ensure that the server starts without any errors related to plugin loading.
        Once the server is up, check the server logs to ensure that the CoinFlipLogger plugin has been successfully loaded. Look for an entry like:
 
-    ```
 
     [Info] CoinFlipLogger plugin has been enabled.
-    ```
+
 
 ### Usage
 
