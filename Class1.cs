@@ -1,8 +1,8 @@
-﻿using PluginAPI.Core;
+using PluginAPI.Core;
 using PluginAPI.Core.Attributes;
 using PluginAPI.Enums;
 using PluginAPI.Events;
-using System;
+using InventorySystem.Items;
 
 namespace CoinFlipLogger
 {
@@ -12,23 +12,31 @@ namespace CoinFlipLogger
         public PluginConfig Config;
 
         private ItemType[] PossibleItems;
+        private ItemType[] RareItems;
+        private ItemType[] LegendItems; // Added this array
+        private int currentIndex;
+        private int flipCount; // To simulate randomness with a simple counter
 
         // Parameters for the linear congruential generator (LCG)
         private const uint LCGMultiplier = 1664525;
         private const uint LCGIncrement = 1013904223;
         private uint lcgState = 0; // Seed for the LCG
 
-        [PluginPriority(LoadPriority.High)]
-        [PluginEntryPoint(
-            "CoinGambler", 
-            "1.0.0", 
-            "Makes you able to gamble with coins.", 
-            "Joseph_fallen")]
+        // Probability constants
+        private const double LoseCoinChance = 0.10; // 10% chance to lose the coin
+        private const double RareItemChance = 0.05; // 5% chance for a rare item
+        private const double LegendItemChance = 0.01; // 1% chance for a legendary item
 
+        [PluginPriority(LoadPriority.High)]
+        [PluginEntryPoint("CoinFlipLogger", "1.1.0", "Logs when a player flips a coin and occasionally rewards them with items, with some risk of losing the coin.", "YourName")]
         public void OnPluginStart()
         {
-            // Initialize the array and the deterministic sequence
+            // Initialize the arrays and the deterministic sequence
             InitializePossibleItems();
+            InitializeRareItems();
+            InitializeLegendItems(); // Ensure this is called to initialize the array
+            currentIndex = 0;
+            flipCount = 0; // Initialize the counter
             lcgState = (uint)DateTime.Now.Ticks; // Initialize LCG seed
 
             // Register event handlers
@@ -47,12 +55,6 @@ namespace CoinFlipLogger
                 ItemType.ArmorHeavy,               // Heavy Armor
                 ItemType.ArmorLight,               // Light Armor
                 ItemType.Radio,                    // Radio
-                ItemType.Adrenaline,
-                ItemType.AntiSCP207,
-                ItemType.SCP500,
-                ItemType.Ammo9x19,
-                ItemType.Ammo9x19,
-                ItemType.Ammo9x19,
                 ItemType.KeycardO5,                // O5 Keycard
                 ItemType.KeycardJanitor,           // Janitor Keycard
                 ItemType.KeycardScientist,         // Scientist Keycard
@@ -71,6 +73,26 @@ namespace CoinFlipLogger
             };
         }
 
+        private void InitializeRareItems()
+        {
+            // Initialize the array with rare items
+            RareItems = new ItemType[]
+            {
+                ItemType.GunCom45,                 // COM-45
+                ItemType.ParticleDisruptor,        // Particle Disruptor
+                ItemType.Jailbird,                 // Jailbird
+            };
+        }
+
+        private void InitializeLegendItems()
+        {
+            // Initialize the array with legendary items
+            LegendItems = new ItemType[]
+            {
+                ItemType.MicroHID // Example legendary item
+            };
+        }
+
         private int GetRandomIndex(int max)
         {
             // Linear congruential generator (LCG) for pseudo-random number generation
@@ -78,10 +100,11 @@ namespace CoinFlipLogger
             return (int)(lcgState % max);
         }
 
-        private bool RollChance(float chance)
+        private ItemType GetRandomItem(ItemType[] items)
         {
-            // Roll a random chance based on the provided percentage
-            return (GetRandomIndex(100) < chance * 100);
+            // Get a random index for the item
+            int randomIndex = GetRandomIndex(items.Length);
+            return items[randomIndex];
         }
 
         [PluginEvent(ServerEventType.PlayerCoinFlip)]
@@ -91,16 +114,35 @@ namespace CoinFlipLogger
             string logMessage = ev.Player.Nickname + " (" + ev.Player.UserId + ") flipped a coin.";
             Log.Info(logMessage);
 
-            // Check if the item should be given with a 25% chance
-            if (RollChance(0.25f)) // 25% chance
+            // Simulate 10% chance to lose the coin
+            if (GetRandomIndex(100) < 10) // 10% chance to lose the coin
             {
-                // Get a random index for the item
-                int randomIndex = GetRandomIndex(PossibleItems.Length);
-                var itemToGive = PossibleItems[randomIndex];
+                ev.Player.RemoveItem(ev.Player.CurrentItem);
+                Log.Info(ev.Player.Nickname + " (" + ev.Player.UserId + ") lost the coin.");
+                return;
+            }
 
-                // Give the item to the player
-                ev.Player.AddItem(itemToGive);
-                string itemMessage = ev.Player.Nickname + " (" + ev.Player.UserId + ") received a " + itemToGive + ".";
+            // Determine if a rare item should be given
+            if (GetRandomIndex(100) < 5) // 5% chance for a rare item
+            {
+                var rareItemType = GetRandomItem(RareItems);
+                ev.Player.AddItem(rareItemType); // Use ItemType directly
+                string itemMessage = ev.Player.Nickname + " (" + ev.Player.UserId + ") received a rare item: " + rareItemType + ".";
+                Log.Info(itemMessage);
+            }
+            else if (GetRandomIndex(100) < 1) // 1% chance for a legendary item
+            {
+                var legendItemType = GetRandomItem(LegendItems);
+                ev.Player.AddItem(legendItemType); // Use ItemType directly
+                string itemMessage = ev.Player.Nickname + " (" + ev.Player.UserId + ") received a legendary item: " + legendItemType + ".";
+                Log.Info(itemMessage);
+            }
+            else if (GetRandomIndex(100) < 25) // 25% chance for a normal item
+            {
+                // Normal item reward
+                var itemType = GetRandomItem(PossibleItems);
+                ev.Player.AddItem(itemType); // Use ItemType directly
+                string itemMessage = ev.Player.Nickname + " (" + ev.Player.UserId + ") received a " + itemType + ".";
                 Log.Info(itemMessage);
             }
         }
