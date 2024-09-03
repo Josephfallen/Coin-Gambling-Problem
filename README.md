@@ -1,5 +1,3 @@
-markdown
-
 # Coin Gambling Problem Plugin for SCP: Secret Laboratory
 
 This repository contains a plugin for SCP: Secret Laboratory designed to simulate a coin gambling system where players can receive random items based on a coin flip. This README provides instructions for setting up and installing the plugin on your SCP:SL server.
