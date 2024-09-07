@@ -5,6 +5,8 @@ This repository contains a plugin for SCP: Secret Laboratory designed to simulat
 ## Overview
 
 The `CoinFlipLogger` plugin logs when a player flips a coin and occasionally rewards them with an item from a predefined list based on a 25% chance. The plugin uses a linear congruential generator (LCG) for pseudo-random number generation.
+>[!WARNING]
+>Will not work with EXILED
 
 ## Features
 
